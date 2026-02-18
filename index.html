@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Threat Arena | Security Principles Lab</title>
+    <style>
+        :root {
+            --bg: #0a0b10;
+            --card: #161b22;
+            --accent: #90ee90; /* Light Green */
+            --error: #ff4d4d; /* For rejection feedback */
+            --text: #e6edf3;
+            --square-size: 160px; 
+        }
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        h2 { color: var(--accent); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 20px; }
+        
+        #inventory {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 40px;
+            padding: 20px;
+        }
+
+        .arena-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr); 
+            gap: 15px;
+            justify-items: center;
+        }
+
+        .drop-zone, .inventory-slot {
+            background: var(--card);
+            border: 2px dashed #30363d;
+            border-radius: 15px;
+            width: var(--square-size);
+            height: var(--square-size);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .drop-zone h4, .inventory-slot h4 { 
+            position: absolute;
+            top: 10px;
+            margin: 0;
+            font-size: 0.85rem; 
+            color: var(--accent);
+            font-weight: bold;
+            pointer-events: none;
+        }
+
+        .drag-item {
+            background: #21262d;
+            border: 1px solid #30363d;
+            padding: 12px;
+            border-radius: 8px;
+            cursor: grab;
+            font-size: 0.8rem;
+            text-align: center;
+            width: 80%;
+            user-select: none;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            z-index: 10;
+        }
+
+        .drag-item:active { cursor: grabbing; transform: scale(0.95); }
+        .hovered { border-color: var(--accent); background: #1c2128; }
+        .rejected { border-color: var(--error) !important; background: rgba(255, 77, 77, 0.1) !important; }
+
+        /* MODAL STYLES */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background: var(--card);
+            border: 2px solid var(--accent);
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            max-width: 400px;
+            box-shadow: 0 0 30px rgba(144, 238, 144, 0.3);
+            animation: modalPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes modalPop {
+            from { transform: scale(0.8); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        .modal-content h1 { color: var(--accent); margin-bottom: 10px; }
+        .flag-display {
+            background: #0d1117;
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid #30363d;
+            color: var(--accent);
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            margin: 20px 0;
+            word-break: break-all;
+        }
+        .close-btn {
+            background: var(--accent);
+            color: black;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 5px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .close-btn:hover { opacity: 0.8; transform: translateY(-2px); }
+
+        @media (max-width: 600px) {
+            .arena-container, #inventory { grid-template-columns: repeat(2, 1fr); }
+            --square-size: 140px;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Threat Arena: Principles Challenge</h2>
+    
+    <p style="color: #8b949e; margin-bottom: 10px;">Tactical Inventory</p>
+    <div id="inventory">
+        <div class="inventory-slot" ondrop="drop(event)" ondragover="allowDrop(event)">
+            <div class="drag-item" draggable="true" ondragstart="drag(event)" id="def1" data-target="conf">Authorized Access Only</div>
+        </div>
+        <div class="inventory-slot" ondrop="drop(event)" ondragover="allowDrop(event)">
+            <div class="drag-item" draggable="true" ondragstart="drag(event)" id="def2" data-target="integ">Data remains unaltered</div>
+        </div>
+        <div class="inventory-slot" ondrop="drop(event)" ondragover="allowDrop(event)">
+            <div class="drag-item" draggable="true" ondragstart="drag(event)" id="def3" data-target="avail">System is up and running</div>
+        </div>
+        <div class="inventory-slot" ondrop="drop(event)" ondragover="allowDrop(event)">
+            <div class="drag-item" draggable="true" ondragstart="drag(event)" id="def4" data-target="util">Information is useful</div>
+        </div>
+        <div class="inventory-slot" ondrop="drop(event)" ondragover="allowDrop(event)">
+            <div class="drag-item" draggable="true" ondragstart="drag(event)" id="def5" data-target="poss">Physical control of media</div>
+        </div>
+        <div class="inventory-slot" ondrop="drop(event)" ondragover="allowDrop(event)">
+            <div class="drag-item" draggable="true" ondragstart="drag(event)" id="def6" data-target="auth">Origin is verified</div>
+        </div>
+    </div>
+
+    <p style="color: #8b949e; margin-bottom: 10px;">The Arena</p>
+    <div class="arena-container">
+        <div class="drop-zone" id="conf" ondrop="drop(event)" ondragover="allowDrop(event)"><h4>Confidentiality</h4></div>
+        <div class="drop-zone" id="integ" ondrop="drop(event)" ondragover="allowDrop(event)"><h4>Integrity</h4></div>
+        <div class="drop-zone" id="avail" ondrop="drop(event)" ondragover="allowDrop(event)"><h4>Availability</h4></div>
+        <div class="drop-zone" id="util" ondrop="drop(event)" ondragover="allowDrop(event)"><h4>Utility</h4></div>
+        <div class="drop-zone" id="poss" ondrop="drop(event)" ondragover="allowDrop(event)"><h4>Possession</h4></div>
+        <div class="drop-zone" id="auth" ondrop="drop(event)" ondragover="allowDrop(event)"><h4>Authenticity</h4></div>
+    </div>
+
+    <div class="modal-overlay" id="flagModal">
+        <div class="modal-content">
+            <h1>ACCESS GRANTED</h1>
+            <p style="color: #8b949e;">Foundation Logic Validated.</p>
+            <div class="flag-display" id="finalFlag"></div>
+        </div>
+    </div>
+
+    <script>
+        const _0x5a21 = "R0RHe0M0cHR1cmVfdGhlX0FyZW5hX0ZvdW5kYXRpb25zfQ==";
+
+        function allowDrop(ev) {
+            ev.preventDefault();
+            const zone = ev.target.closest('.drop-zone') || ev.target.closest('.inventory-slot');
+            if (zone) zone.classList.add('hovered');
+        }
+
+        function drag(ev) {
+            ev.dataTransfer.setData("text", ev.target.id);
+        }
+
+        function drop(ev) {
+            ev.preventDefault();
+            const zone = ev.target.closest('.drop-zone') || ev.target.closest('.inventory-slot');
+            document.querySelectorAll('.drop-zone, .inventory-slot').forEach(z => z.classList.remove('hovered'));
+            
+            const data = ev.dataTransfer.getData("text");
+            const draggedElement = document.getElementById(data);
+            const targetType = draggedElement.getAttribute('data-target');
+
+            if (zone) {
+                if (zone.classList.contains('inventory-slot')) {
+                    if (zone.querySelectorAll('.drag-item').length === 0) {
+                        zone.appendChild(draggedElement);
+                    }
+                } 
+                else if (zone.classList.contains('drop-zone')) {
+                    if (zone.id === targetType && zone.querySelectorAll('.drag-item').length === 0) {
+                        zone.appendChild(draggedElement);
+                        zone.style.borderStyle = "solid";
+                    } else {
+                        zone.classList.add('rejected');
+                        setTimeout(() => zone.classList.remove('rejected'), 500);
+                    }
+                }
+            }
+            checkStatus();
+        }
+
+        function checkStatus() {
+            const zones = document.querySelectorAll('.drop-zone');
+            let correct = 0;
+            zones.forEach(zone => {
+                const item = zone.querySelector('.drag-item');
+                if (item && item.getAttribute('data-target') === zone.id) correct++;
+            });
+
+            if (correct === 6) {
+                setTimeout(() => {
+                    document.getElementById('finalFlag').innerText = atob(_0x5a21);
+                    document.getElementById('flagModal').style.display = 'flex';
+                }, 300);
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('flagModal').style.display = 'none';
+        }
+
+        document.addEventListener("dragleave", function(event) {
+            const zone = event.target.closest('.drop-zone') || event.target.closest('.inventory-slot');
+            if (zone) zone.classList.remove('hovered');
+        });
+    </script>
+</body>
+</html>
